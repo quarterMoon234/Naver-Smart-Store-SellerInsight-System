@@ -1,0 +1,35 @@
+name: PR Policy
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [[ ! "$PR_TITLE" =~ ^\[(BUG|TEST|FEAT|TASK)\]\ .+ ]]; then
+            echo "Invalid PR title: $PR_TITLE"
+            echo "Expected format: [BUG] summary"
+            echo "Allowed types: BUG, TEST, FEAT, TASK"
+            exit 1
+          fi
+
+      - name: Validate branch name
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+        run: |
+          if [[ ! "$BRANCH_NAME" =~ ^(bug|test|feat|task)/([0-9]+-)?[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+            echo "Invalid branch name: $BRANCH_NAME"
+            echo "Expected format: {bug|test|feat|task}/(issue-number-)?short-description"
+            exit 1
+          fi

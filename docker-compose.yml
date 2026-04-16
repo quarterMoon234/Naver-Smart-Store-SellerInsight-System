@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sellerinsight-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-sellerinsight}
+      POSTGRES_USER: ${DB_USERNAME:-sellerinsight}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sellerinsight}
+      TZ: Asia/Seoul
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - sellerinsight-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-sellerinsight} -d ${DB_NAME:-sellerinsight}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sellerinsight-postgres-data:

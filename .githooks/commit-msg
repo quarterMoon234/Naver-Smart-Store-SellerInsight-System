@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+set -eu
+
+COMMIT_MSG_FILE="$1"
+SUBJECT="$(head -n 1 "$COMMIT_MSG_FILE")"
+
+case "$SUBJECT" in
+  Merge\ *|Revert\ \"*)
+    exit 0
+    ;;
+esac
+
+PATTERN='^(bug|test|feat|task)(\([a-z0-9-]+\))?!?: .+$'
+
+if ! printf '%s' "$SUBJECT" | grep -Eq "$PATTERN"; then
+  echo "Invalid commit message:"
+  echo "  $SUBJECT"
+  echo
+  echo "Expected format:"
+  echo "  bug: summary"
+  echo "  test: summary"
+  echo "  feat: summary"
+  echo "  task: summary"
+  echo
+  echo "Allowed examples:"
+  echo "  feat: add docker compose"
+  echo "  task(config): split spring profiles"
+  echo "  bug(order): handle null response"
+  echo "  test(sync): add checkpoint service test"
+  exit 1
+fi
