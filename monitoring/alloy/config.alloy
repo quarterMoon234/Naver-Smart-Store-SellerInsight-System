@@ -1,0 +1,33 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+loki.source.file "sellerinsight" {
+  targets = [
+    {
+      __path__         = "/var/log/sellerinsight/*.log",
+      __path_exclude__ = "/var/log/sellerinsight/archive/*.log",
+      job              = "sellerinsight-log",
+      application      = "sellerinsight",
+      environment      = "local",
+    },
+  ]
+
+  forward_to = [loki.write.default.receiver]
+
+  file_match {
+    enabled     = true
+    sync_period = "5s"
+  }
+}
+
+loki.write "default" {
+  external_labels = {
+    source = "alloy",
+  }
+
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

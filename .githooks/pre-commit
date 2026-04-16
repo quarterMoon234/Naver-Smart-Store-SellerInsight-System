@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+set -eu
+
+BRANCH_NAME="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+
+if [ -z "$BRANCH_NAME" ]; then
+  exit 0
+fi
+
+PATTERN='^(bug|test|feat|task)/([0-9]+-)?[a-z0-9]+(-[a-z0-9]+)*$'
+
+if ! printf '%s' "$BRANCH_NAME" | grep -Eq "$PATTERN"; then
+  echo "Invalid branch name:"
+  echo "  $BRANCH_NAME"
+  echo
+  echo "Expected format:"
+  echo "  {bug|test|feat|task}/(issue-number-)?short-description"
+  echo
+  echo "Allowed examples:"
+  echo "  feat/12-initialize-db-config"
+  echo "  task/setup-git-hooks"
+  echo "  bug/fix-order-sync-null-response"
+  echo "  test/add-order-service-test"
+  exit 1
+fi
