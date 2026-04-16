@@ -8,6 +8,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sellerinsight.common.security.CredentialEncryptor;
+import com.sellerinsight.importjob.domain.ImportJobRepository;
+import com.sellerinsight.order.domain.CustomerOrderRepository;
+import com.sellerinsight.order.domain.OrderItemRepository;
+import com.sellerinsight.product.domain.ProductRepository;
 import com.sellerinsight.seller.api.dto.UpsertSellerCredentialRequest;
 import com.sellerinsight.seller.domain.Seller;
 import com.sellerinsight.seller.domain.SellerCredential;
@@ -42,8 +46,24 @@ class SellerCredentialControllerTest {
     @Autowired
     private CredentialEncryptor credentialEncryptor;
 
+    @Autowired
+    private ImportJobRepository importJobRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
+    private CustomerOrderRepository customerOrderRepository;
+
+    @Autowired
+    private OrderItemRepository orderItemRepository;
+
     @BeforeEach
     void setUp() {
+        orderItemRepository.deleteAll();
+        customerOrderRepository.deleteAll();
+        productRepository.deleteAll();
+        importJobRepository.deleteAll();
         sellerCredentialRepository.deleteAll();
         sellerRepository.deleteAll();
     }

@@ -70,6 +70,9 @@ dependencies {
     // MONITORING
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
+    // CSV
+    implementation 'org.apache.commons:commons-csv:1.14.1'
+
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
     // UTIL
