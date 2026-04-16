@@ -1,8 +1,13 @@
 package com.sellerinsight.seller.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sellerinsight.importjob.domain.ImportJobRepository;
+import com.sellerinsight.order.domain.CustomerOrderRepository;
+import com.sellerinsight.order.domain.OrderItemRepository;
+import com.sellerinsight.product.domain.ProductRepository;
 import com.sellerinsight.seller.api.dto.CreateSellerRequest;
 import com.sellerinsight.seller.domain.Seller;
+import com.sellerinsight.seller.domain.SellerCredentialRepository;
 import com.sellerinsight.seller.domain.SellerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,8 +37,28 @@ class SellerControllerTest {
     @Autowired
     private SellerRepository sellerRepository;
 
+    @Autowired
+    private ImportJobRepository importJobRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
+    private CustomerOrderRepository customerOrderRepository;
+
+    @Autowired
+    private OrderItemRepository orderItemRepository;
+
+    @Autowired
+    private SellerCredentialRepository sellerCredentialRepository;
+
     @BeforeEach
     void setUp() {
+        orderItemRepository.deleteAll();
+        customerOrderRepository.deleteAll();
+        productRepository.deleteAll();
+        importJobRepository.deleteAll();
+        sellerCredentialRepository.deleteAll();
         sellerRepository.deleteAll();
     }
 
