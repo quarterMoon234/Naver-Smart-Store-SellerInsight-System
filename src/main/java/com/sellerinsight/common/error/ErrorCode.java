@@ -13,6 +13,10 @@ public enum ErrorCode {
     DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "COMMON_409", "이미 존재하는 리소스입니다."),
     SELLER_CREDENTIAL_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER_404_1", "판매자 연동 정보를 찾을 수 없습니다."),
 
+    NAVER_COMMERCE_SIGNATURE_FAILED(HttpStatus.BAD_REQUEST, "COMMERCE_400_1", "네이버 커머스 clientSecret 형식이 올바르지 않습니다."),
+    NAVER_COMMERCE_AUTH_FAILED(HttpStatus.BAD_GATEWAY, "COMMERCE_502_1", "네이버 커머스 인증 토큰 발급에 실패했습니다."),
+    NAVER_COMMERCE_AUTH_INVALID_RESPONSE(HttpStatus.BAD_GATEWAY, "COMMERCE_502_2", "네이버 커머스 인증 응답 형식이 올바르지 않습니다."),
+
     IMPORT_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "IMPORT_404_1", "가져오기 작업을 찾을 수 없습니다."),
     CSV_IMPORT_INVALID_FILE(HttpStatus.BAD_REQUEST, "IMPORT_400_1", "CSV 파일이 비어 있거나 형식이 올바르지 않습니다."),
     CSV_IMPORT_FAILED(HttpStatus.BAD_REQUEST, "IMPORT_400_2", "CSV 가져오기에 실패했습니다."),
