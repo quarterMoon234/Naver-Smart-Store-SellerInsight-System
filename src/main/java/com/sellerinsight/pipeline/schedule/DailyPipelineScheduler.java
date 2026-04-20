@@ -25,11 +25,13 @@ public class DailyPipelineScheduler {
     public void run() {
         LocalDate targetDate = LocalDate.now(ASIA_SEOUL).minusDays(1);
 
-        DailyPipelineRunResponse result = dailyPipelineExecutionService.run(targetDate);
+        DailyPipelineRunResponse result = dailyPipelineExecutionService.runScheduled(targetDate);
 
         log.info(
-                "일별 파이프라인 실행 완료. metricDate={}, totalSellerCount={}, processedSellerCount={}, failedSellerCount={}, generatedInsightCount={}",
+                "일별 파이프라인 실행 완료. runId={}, metricDate={}, status={}, totalSellerCount={}, processedSellerCount={}, failedSellerCount={}, generatedInsightCount={}",
+                result.runId(),
                 result.metricDate(),
+                result.status(),
                 result.totalSellerCount(),
                 result.processedSellerCount(),
                 result.failedSellerCount(),

@@ -7,10 +7,9 @@ import com.sellerinsight.pipeline.domain.PipelineType;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.List;
 
-public record DailyPipelineRunResponse(
-        Long runId,
+public record PipelineRunSummaryResponse(
+        Long id,
         PipelineType pipelineType,
         PipelineTriggerType triggerType,
         PipelineRunStatus status,
@@ -19,15 +18,11 @@ public record DailyPipelineRunResponse(
         int processedSellerCount,
         int failedSellerCount,
         int generatedInsightCount,
-        List<Long> failedSellerIds,
         OffsetDateTime startedAt,
         OffsetDateTime endedAt
 ) {
-    public static DailyPipelineRunResponse from(
-            PipelineRun pipelineRun,
-            List<Long> failedSellerIds
-    ) {
-        return new DailyPipelineRunResponse(
+    public static PipelineRunSummaryResponse from(PipelineRun pipelineRun) {
+        return new PipelineRunSummaryResponse(
                 pipelineRun.getId(),
                 pipelineRun.getPipelineType(),
                 pipelineRun.getTriggerType(),
@@ -37,7 +32,6 @@ public record DailyPipelineRunResponse(
                 pipelineRun.getProcessedSellerCount(),
                 pipelineRun.getFailedSellerCount(),
                 pipelineRun.getGeneratedInsightCount(),
-                failedSellerIds,
                 pipelineRun.getStartedAt(),
                 pipelineRun.getEndedAt()
         );
