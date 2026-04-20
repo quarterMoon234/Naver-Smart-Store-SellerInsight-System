@@ -7,6 +7,8 @@ import com.sellerinsight.insight.domain.RecommendationRepository;
 import com.sellerinsight.metric.domain.DailyMetricRepository;
 import com.sellerinsight.order.domain.CustomerOrderRepository;
 import com.sellerinsight.order.domain.OrderItemRepository;
+import com.sellerinsight.pipeline.domain.PipelineRunItemRepository;
+import com.sellerinsight.pipeline.domain.PipelineRunRepository;
 import com.sellerinsight.product.domain.ProductRepository;
 import com.sellerinsight.seller.api.dto.CreateSellerRequest;
 import com.sellerinsight.seller.domain.Seller;
@@ -64,8 +66,16 @@ class SellerControllerTest {
     @Autowired
     private InsightRepository insightRepository;
 
+    @Autowired
+    private PipelineRunItemRepository pipelineRunItemRepository;
+
+    @Autowired
+    private PipelineRunRepository pipelineRunRepository;
+
     @BeforeEach
     void setUp() {
+        pipelineRunItemRepository.deleteAll();
+        pipelineRunRepository.deleteAll();
         recommendationRepository.deleteAll();
         insightRepository.deleteAll();
         dailyMetricRepository.deleteAll();
