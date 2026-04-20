@@ -16,6 +16,13 @@ spring:
 app:
   security:
     encryption-key: 0123456789abcdef0123456789abcdef
+
+  api-security:
+    admin-username: admin
+    admin-password: admin-1234
+    seller-username: seller-demo
+    seller-password: seller-demo-1234
+
   pipeline:
     daily:
       enabled: false

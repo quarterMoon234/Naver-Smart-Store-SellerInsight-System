@@ -1,17 +1,7 @@
 spring:
   config:
     activate:
-      on-profile: docker
-
-  datasource:
-    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:sellerinsight}
-    username: ${DB_USERNAME:sellerinsight}
-    password: ${DB_PASSWORD:sellerinsight}
-    driver-class-name: org.postgresql.Driver
-
-  sql:
-    init:
-      mode: never
+      on-profile: demo
 
 app:
   security:
@@ -22,6 +12,10 @@ app:
     admin-password: ${APP_ADMIN_PASSWORD:admin-1234}
     seller-username: ${APP_SELLER_USERNAME:seller-demo}
     seller-password: ${APP_SELLER_PASSWORD:seller-demo-1234}
+
+  pipeline:
+    daily:
+      enabled: false
 
 logging:
   level:

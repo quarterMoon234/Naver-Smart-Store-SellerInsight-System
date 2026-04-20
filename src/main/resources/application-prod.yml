@@ -17,6 +17,12 @@ app:
   security:
     encryption-key: ${APP_ENCRYPTION_KEY}
 
+  api-security:
+    admin-username: ${APP_ADMIN_USERNAME}
+    admin-password: ${APP_ADMIN_PASSWORD}
+    seller-username: ${APP_SELLER_USERNAME}
+    seller-password: ${APP_SELLER_PASSWORD}
+
 server:
   forward-headers-strategy: framework
 

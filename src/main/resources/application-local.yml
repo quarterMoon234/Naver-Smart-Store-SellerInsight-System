@@ -17,6 +17,12 @@ app:
   security:
     encryption-key: ${APP_ENCRYPTION_KEY:0123456789abcdef0123456789abcdef}
 
+  api-security:
+    admin-username: ${APP_ADMIN_USERNAME:admin}
+    admin-password: ${APP_ADMIN_PASSWORD:admin-1234}
+    seller-username: ${APP_SELLER_USERNAME:seller-demo}
+    seller-password: ${APP_SELLER_PASSWORD:seller-demo-1234}
+
 logging:
   level:
     com.sellerinsight: DEBUG
