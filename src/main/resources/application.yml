@@ -26,7 +26,6 @@ server:
       enabled: true
       force: true
 
-
 management:
   endpoints:
     web:
@@ -63,6 +62,12 @@ naver-commerce:
     token-path: /external/v1/oauth2/token
     connect-timeout-ms: 3000
     read-timeout-seconds: 5
+
+app:
+  pipeline:
+    daily:
+      enabled: true
+      cron: 0 5 2 * * *
 
 logging:
   level:

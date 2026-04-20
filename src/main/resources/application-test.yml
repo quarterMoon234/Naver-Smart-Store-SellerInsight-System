@@ -16,6 +16,9 @@ spring:
 app:
   security:
     encryption-key: 0123456789abcdef0123456789abcdef
+  pipeline:
+    daily:
+      enabled: false
 
 logging:
   level:
