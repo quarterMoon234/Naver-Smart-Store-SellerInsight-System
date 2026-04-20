@@ -6,6 +6,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sellerinsight.importjob.domain.ImportJobRepository;
+import com.sellerinsight.insight.domain.InsightRepository;
+import com.sellerinsight.insight.domain.RecommendationRepository;
 import com.sellerinsight.metric.domain.DailyMetricRepository;
 import com.sellerinsight.order.domain.CustomerOrder;
 import com.sellerinsight.order.domain.CustomerOrderRepository;
@@ -56,8 +58,16 @@ class DailyMetricControllerTest {
     @Autowired
     private SellerRepository sellerRepository;
 
+    @Autowired
+    private RecommendationRepository recommendationRepository;
+
+    @Autowired
+    private InsightRepository insightRepository;
+
     @BeforeEach
     void setUp() {
+        recommendationRepository.deleteAll();
+        insightRepository.deleteAll();
         dailyMetricRepository.deleteAll();
         orderItemRepository.deleteAll();
         customerOrderRepository.deleteAll();
@@ -195,4 +205,3 @@ class DailyMetricControllerTest {
                 .andExpect(jsonPath("$.data.staleProductCount").value(1));
     }
 }
-
