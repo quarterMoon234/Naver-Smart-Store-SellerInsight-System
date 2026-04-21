@@ -2,6 +2,7 @@ package com.sellerinsight.pipeline.api;
 
 import com.sellerinsight.common.api.ApiResponse;
 import com.sellerinsight.pipeline.api.dto.DailyPipelineRunResponse;
+import com.sellerinsight.pipeline.api.dto.PipelineExecutionLockReleaseResponse;
 import com.sellerinsight.pipeline.api.dto.PipelineRunDetailResponse;
 import com.sellerinsight.pipeline.api.dto.PipelineRunSummaryResponse;
 import com.sellerinsight.pipeline.application.DailyPipelineExecutionService;
@@ -51,5 +52,15 @@ public class AdminDailyPipelineController {
     @GetMapping("/daily/runs/{runId}")
     public ApiResponse<PipelineRunDetailResponse> getRunDetail(@PathVariable Long runId) {
         return ApiResponse.ok(dailyPipelineExecutionService.getRunDetail(runId));
+    }
+
+    @Operation(summary = "특정 날짜 파이프라인 실행 lock 강제 해제")
+    @DeleteMapping("/daily/locks/{metricDate}")
+    public ApiResponse<PipelineExecutionLockReleaseResponse> forceReleaseLock(
+            @PathVariable
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate metricDate
+    ) {
+        return ApiResponse.ok(dailyPipelineExecutionService.forceReleaseLock(metricDate));
     }
 }
