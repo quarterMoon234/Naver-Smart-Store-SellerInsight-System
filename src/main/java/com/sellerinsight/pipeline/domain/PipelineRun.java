@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -88,5 +89,13 @@ public class PipelineRun extends BaseEntity {
         this.failedSellerCount = failedSellerCount;
         this.generatedInsightCount = generatedInsightCount;
         this.endedAt = OffsetDateTime.now(ASIA_SEOUL);
+    }
+
+    public Long getDurationMs() {
+        if (startedAt == null || endedAt == null) {
+            return null;
+        }
+
+        return Duration.between(startedAt, endedAt).toMillis();
     }
 }

@@ -21,7 +21,8 @@ public record DailyPipelineRunResponse(
         int generatedInsightCount,
         List<Long> failedSellerIds,
         OffsetDateTime startedAt,
-        OffsetDateTime endedAt
+        OffsetDateTime endedAt,
+        Long durationMs
 ) {
     public static DailyPipelineRunResponse from(
             PipelineRun pipelineRun,
@@ -39,7 +40,8 @@ public record DailyPipelineRunResponse(
                 pipelineRun.getGeneratedInsightCount(),
                 failedSellerIds,
                 pipelineRun.getStartedAt(),
-                pipelineRun.getEndedAt()
+                pipelineRun.getEndedAt(),
+                pipelineRun.getDurationMs()
         );
     }
 }
