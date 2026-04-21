@@ -89,7 +89,19 @@ public class ImportJob extends BaseEntity {
     }
 
     public void markFailed(String errorMessage) {
+        markFailed(this.totalRowCount, this.successRowCount, this.failedRowCount, errorMessage);
+    }
+
+    public void markFailed(
+            int totalRowCount,
+            int successRowCount,
+            int failedRowCount,
+            String errorMessage
+    ) {
         this.status = ImportJobStatus.FAILED;
+        this.totalRowCount = totalRowCount;
+        this.successRowCount = successRowCount;
+        this.failedRowCount = failedRowCount;
         this.endedAt = OffsetDateTime.now(ASIA_SEOUL);
         this.errorMessage = truncate(errorMessage);
     }
