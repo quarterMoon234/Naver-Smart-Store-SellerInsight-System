@@ -5,10 +5,8 @@ import com.sellerinsight.common.error.ErrorCode;
 import com.sellerinsight.metric.api.dto.DailyMetricResponse;
 import com.sellerinsight.metric.domain.DailyMetric;
 import com.sellerinsight.metric.domain.DailyMetricRepository;
-import com.sellerinsight.order.domain.CustomerOrder;
 import com.sellerinsight.order.domain.CustomerOrderRepository;
-import com.sellerinsight.order.domain.OrderItemRepository;
-import com.sellerinsight.product.domain.Product;
+import com.sellerinsight.order.domain.DailyOrderSummary;
 import com.sellerinsight.product.domain.ProductRepository;
 import com.sellerinsight.seller.domain.Seller;
 import com.sellerinsight.seller.domain.SellerRepository;
@@ -21,8 +19,6 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +31,6 @@ public class DailyMetricAggregationService {
     private final DailyMetricRepository dailyMetricRepository;
     private final ProductRepository productRepository;
     private final CustomerOrderRepository customerOrderRepository;
-    private final OrderItemRepository orderItemRepository;
 
     @Transactional
     public DailyMetricResponse aggregate(Long sellerId, LocalDate metricDate) {
@@ -45,17 +40,14 @@ public class DailyMetricAggregationService {
         OffsetDateTime dayStart = metricDate.atStartOfDay(ASIA_SEOUL).toOffsetDateTime();
         OffsetDateTime nextDayStart = metricDate.plusDays(1).atStartOfDay(ASIA_SEOUL).toOffsetDateTime();
 
-        List<CustomerOrder> orders = customerOrderRepository
-                .findAllBySellerIdAndOrderedAtGreaterThanEqualAndOrderedAtLessThan(
-                        sellerId,
-                        dayStart,
-                        nextDayStart
-                );
+        DailyOrderSummary orderSummary = customerOrderRepository.summarizeDailyOrders(
+                sellerId,
+                dayStart,
+                nextDayStart
+        );
 
-        int orderCount = orders.size();
-        BigDecimal salesAmount = orders.stream()
-                .map(CustomerOrder::getTotalAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        int orderCount = orderSummary.orderCountAsInt();
+        BigDecimal salesAmount = orderSummary.salesAmountOrZero();
 
         BigDecimal averageOrderAmount = orderCount == 0
                 ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
@@ -70,16 +62,13 @@ public class DailyMetricAggregationService {
                 .atStartOfDay(ASIA_SEOUL)
                 .toOffsetDateTime();
 
-        Set<Long> recentlySoldProductIds = orderItemRepository.findDistinctProductIdsBySellerIdAndOrderedAtBetween(
-                sellerId,
-                staleWindowStart,
-                nextDayStart
+        int staleProductCount = Math.toIntExact(
+                productRepository.countStaleProductsBySellerIdAndOrderedAtBetween(
+                        sellerId,
+                        staleWindowStart,
+                        nextDayStart
+                )
         );
-
-        int staleProductCount = (int) productRepository.findAllBySellerId(sellerId).stream()
-                .map(Product::getId)
-                .filter(productId -> !recentlySoldProductIds.contains(productId))
-                .count();
 
         DailyMetric dailyMetric = dailyMetricRepository.findBySellerIdAndMetricDate(sellerId, metricDate)
                 .map(existingMetric -> {
