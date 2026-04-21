@@ -39,8 +39,11 @@ jobs:
         env:
           BRANCH_NAME: ${{ github.head_ref }}
         run: |
-          if [[ ! "$BRANCH_NAME" =~ ^(bug|test|feat|task)/([0-9]+-)?[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+          LONG_LIVED_BRANCH_PATTERN='^(main|dev)$'
+          WORK_BRANCH_PATTERN='^(bug|test|feat|task)/([0-9]+-)?[a-z0-9]+(-[a-z0-9]+)*$'
+
+          if [[ ! "$BRANCH_NAME" =~ $LONG_LIVED_BRANCH_PATTERN && ! "$BRANCH_NAME" =~ $WORK_BRANCH_PATTERN ]]; then
             echo "Invalid branch name: $BRANCH_NAME"
-            echo "Expected format: {bug|test|feat|task}/(issue-number-)?short-description"
+            echo "Expected format: main, dev, or {bug|test|feat|task}/(issue-number-)?short-description"
             exit 1
           fi

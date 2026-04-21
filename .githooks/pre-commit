@@ -7,19 +7,30 @@ if [ -z "$BRANCH_NAME" ]; then
   exit 0
 fi
 
-PATTERN='^(bug|test|feat|task)/([0-9]+-)?[a-z0-9]+(-[a-z0-9]+)*$'
+LONG_LIVED_BRANCH_PATTERN='^(main|dev)$'
+WORK_BRANCH_PATTERN='^(bug|test|feat|task)/([0-9]+-)?[a-z0-9]+(-[a-z0-9]+)*$'
 
-if ! printf '%s' "$BRANCH_NAME" | grep -Eq "$PATTERN"; then
-  echo "Invalid branch name:"
-  echo "  $BRANCH_NAME"
-  echo
-  echo "Expected format:"
-  echo "  {bug|test|feat|task}/(issue-number-)?short-description"
-  echo
-  echo "Allowed examples:"
-  echo "  feat/12-initialize-db-config"
-  echo "  task/setup-git-hooks"
-  echo "  bug/fix-order-sync-null-response"
-  echo "  test/add-order-service-test"
-  exit 1
+if printf '%s' "$BRANCH_NAME" | grep -Eq "$LONG_LIVED_BRANCH_PATTERN"; then
+  exit 0
 fi
+
+if printf '%s' "$BRANCH_NAME" | grep -Eq "$WORK_BRANCH_PATTERN"; then
+  exit 0
+fi
+
+echo "Invalid branch name:"
+echo "  $BRANCH_NAME"
+echo
+echo "Expected format:"
+echo "  main"
+echo "  dev"
+echo "  {bug|test|feat|task}/(issue-number-)?short-description"
+echo
+echo "Allowed examples:"
+echo "  main"
+echo "  dev"
+echo "  feat/12-initialize-db-config"
+echo "  task/setup-git-hooks"
+echo "  bug/fix-order-sync-null-response"
+echo "  test/add-order-service-test"
+exit 1
