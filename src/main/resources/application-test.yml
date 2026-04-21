@@ -26,6 +26,7 @@ app:
   pipeline:
     daily:
       enabled: false
+      lock-timeout-minutes: 30
 
 logging:
   level:

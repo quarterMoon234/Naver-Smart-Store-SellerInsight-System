@@ -5,32 +5,41 @@ import com.sellerinsight.common.error.ErrorCode;
 import com.sellerinsight.insight.api.dto.InsightsByDateResponse;
 import com.sellerinsight.insight.application.InsightGenerationService;
 import com.sellerinsight.metric.application.DailyMetricAggregationService;
-import com.sellerinsight.pipeline.api.dto.DailyPipelineRunResponse;
-import com.sellerinsight.pipeline.api.dto.PipelineRunDetailResponse;
-import com.sellerinsight.pipeline.api.dto.PipelineRunItemResponse;
-import com.sellerinsight.pipeline.api.dto.PipelineRunSummaryResponse;
+import com.sellerinsight.pipeline.api.dto.*;
 import com.sellerinsight.pipeline.domain.*;
 import com.sellerinsight.seller.domain.Seller;
 import com.sellerinsight.seller.domain.SellerRepository;
 import com.sellerinsight.seller.domain.SellerStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class DailyPipelineExecutionService {
+
+    private static final ZoneId ASIA_SEOUL = ZoneId.of("Asia/Seoul");
 
     private final SellerRepository sellerRepository;
     private final DailyMetricAggregationService dailyMetricAggregationService;
     private final InsightGenerationService insightGenerationService;
     private final PipelineRunRepository pipelineRunRepository;
     private final PipelineRunItemRepository pipelineRunItemRepository;
+    private final PipelineExecutionLockRepository pipelineExecutionLockRepository;
+
+    @Value("${app.pipeline.daily.lock-timeout-minutes:30}")
+    private long lockTimeoutMinutes;
 
     public DailyPipelineRunResponse run(LocalDate metricDate) {
         return run(metricDate, PipelineTriggerType.MANUAL);
@@ -64,69 +73,165 @@ public class DailyPipelineExecutionService {
         );
     }
 
-    public DailyPipelineRunResponse run(LocalDate metricDate, PipelineTriggerType triggerType) {
-        List<Seller> sellers = sellerRepository.findAllByStatus(SellerStatus.CONNECTED);
-
-        PipelineRun pipelineRun = pipelineRunRepository.saveAndFlush(
-                PipelineRun.start(PipelineType.DAILY, triggerType, metricDate)
+    public PipelineExecutionLockReleaseResponse forceReleaseLock(LocalDate metricDate) {
+        long deleteCount = pipelineExecutionLockRepository.deleteByPipelineTypeAndMetricDate(
+                PipelineType.DAILY,
+                metricDate
         );
 
-        int processedSellerCount = 0;
-        int failedSellerCount = 0;
-        int generatedInsightCount = 0;
-        List<Long> failedSellerIds = new ArrayList<>();
+        return new PipelineExecutionLockReleaseResponse(metricDate, deleteCount > 0);
+    }
 
-        for (Seller seller : sellers) {
-            try {
-                dailyMetricAggregationService.aggregate(seller.getId(), metricDate);
-                InsightsByDateResponse insightResult = insightGenerationService.generate(
-                        seller.getId(),
-                        metricDate
-                );
+    public DailyPipelineRunResponse run(LocalDate metricDate, PipelineTriggerType triggerType) {
+        boolean lockAcquired = false;
 
-                processedSellerCount++;
-                generatedInsightCount += insightResult.insightCount();
+        try {
+            acquireExecutionLock(metricDate);
+            lockAcquired = true;
 
-                pipelineRunItemRepository.save(
-                        PipelineRunItem.success(
-                                pipelineRun,
-                                seller,
-                                insightResult.insightCount()
-                        )
-                );
+            List<Seller> sellers = sellerRepository.findAllByStatus(SellerStatus.CONNECTED);
 
-            } catch (Exception exception) {
-                failedSellerCount++;
-                failedSellerIds.add(seller.getId());
+            PipelineRun pipelineRun = pipelineRunRepository.saveAndFlush(
+                    PipelineRun.start(PipelineType.DAILY, triggerType, metricDate)
+            );
 
-                pipelineRunItemRepository.save(
-                        PipelineRunItem.failed(
-                                pipelineRun,
-                                seller,
-                                resolveErrorMessage(exception)
-                        )
-                );
+            int processedSellerCount = 0;
+            int failedSellerCount = 0;
+            int generatedInsightCount = 0;
+            List<Long> failedSellerIds = new ArrayList<>();
 
-                log.warn(
-                        "일별 파이프라인 실행 실패. sellerId={}, metricDate={}, message={}",
-                        seller.getId(),
-                        metricDate,
-                        exception.getMessage()
-                );
+            for (Seller seller : sellers) {
+                try {
+                    dailyMetricAggregationService.aggregate(seller.getId(), metricDate);
+                    InsightsByDateResponse insightResult = insightGenerationService.generate(
+                            seller.getId(),
+                            metricDate
+                    );
+
+                    processedSellerCount++;
+                    generatedInsightCount += insightResult.insightCount();
+
+                    pipelineRunItemRepository.save(
+                            PipelineRunItem.success(
+                                    pipelineRun,
+                                    seller,
+                                    insightResult.insightCount()
+                            )
+                    );
+                } catch (Exception exception) {
+                    failedSellerCount++;
+                    failedSellerIds.add(seller.getId());
+
+                    pipelineRunItemRepository.save(
+                            PipelineRunItem.failed(
+                                    pipelineRun,
+                                    seller,
+                                    resolveErrorMessage(exception)
+                            )
+                    );
+
+                    log.warn(
+                            "일별 파이프라인 실행 실패. sellerId={}, metricDate={}, message={}",
+                            seller.getId(),
+                            metricDate,
+                            exception.getMessage()
+                    );
+                }
+            }
+
+            pipelineRun.complete(
+                    determineStatus(sellers.size(), processedSellerCount, failedSellerCount),
+                    sellers.size(),
+                    processedSellerCount,
+                    failedSellerCount,
+                    generatedInsightCount
+            );
+
+            PipelineRun savedPipelineRun = pipelineRunRepository.saveAndFlush(pipelineRun);
+
+            return DailyPipelineRunResponse.from(savedPipelineRun, failedSellerIds);
+
+        } finally {
+            if (lockAcquired) {
+                releaseExecutionLock(metricDate);
             }
         }
+    }
 
-        pipelineRun.complete(
-                determineStatus(sellers.size(), processedSellerCount, failedSellerCount),
-                sellers.size(),
-                processedSellerCount,
-                failedSellerCount,
-                generatedInsightCount
+    private void acquireExecutionLock(LocalDate metricDate) {
+        try {
+            pipelineExecutionLockRepository.saveAndFlush(
+                    PipelineExecutionLock.create(PipelineType.DAILY, metricDate)
+            );
+        } catch (DataIntegrityViolationException exception) {
+            recoverOrThrow(metricDate);
+        }
+    }
+
+    private void recoverOrThrow(LocalDate metricDate) {
+        PipelineExecutionLock existingLock = pipelineExecutionLockRepository.findByPipelineTypeAndMetricDate(
+                        PipelineType.DAILY,
+                        metricDate
+                )
+                .orElseThrow(() -> new BusinessException(ErrorCode.PIPELINE_ALREADY_RUNNING));
+
+        if (!isStaleLock(existingLock, metricDate)) {
+            throw new BusinessException(ErrorCode.PIPELINE_ALREADY_RUNNING);
+        }
+
+        long deletedCount = pipelineExecutionLockRepository.deleteByPipelineTypeAndMetricDate(
+                PipelineType.DAILY,
+                metricDate
         );
 
-        PipelineRun savedPipelineRun = pipelineRunRepository.saveAndFlush(pipelineRun);
+        if (deletedCount == 0) {
+            throw new BusinessException(ErrorCode.PIPELINE_ALREADY_RUNNING);
+        }
 
-        return DailyPipelineRunResponse.from(savedPipelineRun, failedSellerIds);
+        try {
+            pipelineExecutionLockRepository.saveAndFlush(
+                    PipelineExecutionLock.create(PipelineType.DAILY, metricDate)
+            );
+        } catch (DataIntegrityViolationException exception) {
+            throw new BusinessException(ErrorCode.PIPELINE_ALREADY_RUNNING);
+        }
+    }
+
+    private boolean isStaleLock(PipelineExecutionLock existingLock, LocalDate metricDate) {
+        OffsetDateTime now = OffsetDateTime.now(ASIA_SEOUL);
+        OffsetDateTime lockExpiresAt = existingLock.getCreatedAt().plusMinutes(lockTimeoutMinutes);
+
+        if (lockExpiresAt.isAfter(now)) {
+            return false;
+        }
+
+        PipelineRun latestRun = pipelineRunRepository.findFirstByPipelineTypeAndMetricDateOrderByIdDesc(
+                PipelineType.DAILY,
+                metricDate
+        ).orElse(null);
+
+        if (latestRun == null) {
+            return true;
+        }
+
+        if (latestRun.getStatus() != PipelineRunStatus.RUNNING) {
+            return true;
+        }
+
+        if (latestRun.getStartedAt() == null) {
+            return true;
+        }
+
+        return latestRun.getStartedAt()
+                .plusMinutes(lockTimeoutMinutes)
+                .isBefore(now);
+    }
+
+    private void releaseExecutionLock(LocalDate metricDate) {
+        pipelineExecutionLockRepository.deleteByPipelineTypeAndMetricDate(
+                PipelineType.DAILY,
+                metricDate
+        );
     }
 
     private PipelineRunStatus determineStatus(

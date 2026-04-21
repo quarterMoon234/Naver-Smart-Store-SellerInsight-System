@@ -1,5 +1,7 @@
 package com.sellerinsight.pipeline.schedule;
 
+import com.sellerinsight.common.error.BusinessException;
+import com.sellerinsight.common.error.ErrorCode;
 import com.sellerinsight.pipeline.api.dto.DailyPipelineRunResponse;
 import com.sellerinsight.pipeline.application.DailyPipelineExecutionService;
 import lombok.RequiredArgsConstructor;
@@ -25,17 +27,30 @@ public class DailyPipelineScheduler {
     public void run() {
         LocalDate targetDate = LocalDate.now(ASIA_SEOUL).minusDays(1);
 
-        DailyPipelineRunResponse result = dailyPipelineExecutionService.runScheduled(targetDate);
+        try {
+            DailyPipelineRunResponse result = dailyPipelineExecutionService.runScheduled(targetDate);
 
-        log.info(
-                "일별 파이프라인 실행 완료. runId={}, metricDate={}, status={}, totalSellerCount={}, processedSellerCount={}, failedSellerCount={}, generatedInsightCount={}",
-                result.runId(),
-                result.metricDate(),
-                result.status(),
-                result.totalSellerCount(),
-                result.processedSellerCount(),
-                result.failedSellerCount(),
-                result.generatedInsightCount()
-        );
+            log.info(
+                    "일별 파이프라인 실행 완료. runId={}, metricDate={}, status={}, totalSellerCount={}, processedSellerCount={}, failedSellerCount={}, generatedInsightCount={}",
+                    result.runId(),
+                    result.metricDate(),
+                    result.status(),
+                    result.totalSellerCount(),
+                    result.processedSellerCount(),
+                    result.failedSellerCount(),
+                    result.generatedInsightCount()
+            );
+        } catch (BusinessException exception) {
+            if (exception.getErrorCode() == ErrorCode.PIPELINE_ALREADY_RUNNING) {
+                log.info(
+                        "일별 파이프라인 실행 건너뜀. metricDate={}, reason={}",
+                        targetDate,
+                        exception.getMessage()
+                );
+                return;
+            }
+
+            throw exception;
+        }
     }
 }
