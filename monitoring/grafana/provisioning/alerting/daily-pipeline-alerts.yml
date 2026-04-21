@@ -1,0 +1,235 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: daily-pipeline-alerts
+    folder: Seller Insight
+    interval: 1m
+    rules:
+      - uid: daily-pipeline-failed-run
+        title: Daily pipeline failed run detected
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: Prometheus
+            queryType: ""
+            relativeTimeRange:
+              from: 900
+              to: 0
+            model:
+              editorMode: code
+              expr: sum(increase(daily_pipeline_runs_total{application="sellerinsight",status!="SUCCESS"}[15m]))
+              instant: true
+              intervalMs: 1000
+              legendFormat: failed-runs
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            queryType: ""
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            queryType: ""
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: sellerinsight-daily-pipeline
+        panelId: 3
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: Daily pipeline failed run detected
+          description: One or more daily pipeline runs ended with a non-success status during the last 15 minutes.
+        labels:
+          service: sellerinsight
+          severity: critical
+
+      - uid: daily-pipeline-seller-failures
+        title: Daily pipeline seller failures detected
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: Prometheus
+            queryType: ""
+            relativeTimeRange:
+              from: 900
+              to: 0
+            model:
+              editorMode: code
+              expr: sum(increase(daily_pipeline_failed_sellers_total{application="sellerinsight"}[15m]))
+              instant: true
+              intervalMs: 1000
+              legendFormat: failed-sellers
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            queryType: ""
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            queryType: ""
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: sellerinsight-daily-pipeline
+        panelId: 7
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: Daily pipeline seller-level failures detected
+          description: At least one seller failed during daily pipeline processing in the last 15 minutes.
+        labels:
+          service: sellerinsight
+          severity: warning
+
+      - uid: daily-pipeline-duration-regression
+        title: Daily pipeline duration regression
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: Prometheus
+            queryType: ""
+            relativeTimeRange:
+              from: 900
+              to: 0
+            model:
+              editorMode: code
+              expr: sum(increase(daily_pipeline_duration_seconds_sum{application="sellerinsight"}[15m])) / clamp_min(sum(increase(daily_pipeline_duration_seconds_count{application="sellerinsight"}[15m])), 1)
+              instant: true
+              intervalMs: 1000
+              legendFormat: avg-duration
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            queryType: ""
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            queryType: ""
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 2
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: sellerinsight-daily-pipeline
+        panelId: 4
+        noDataState: OK
+        execErrState: Error
+        for: 2m
+        annotations:
+          summary: Daily pipeline execution became slower than expected
+          description: Average daily pipeline duration over the last 15 minutes exceeded 2 seconds.
+        labels:
+          service: sellerinsight
+          severity: warning
