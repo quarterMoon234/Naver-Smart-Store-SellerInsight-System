@@ -20,6 +20,8 @@ public enum ErrorCode {
     IMPORT_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "IMPORT_404_1", "가져오기 작업을 찾을 수 없습니다."),
     CSV_IMPORT_INVALID_FILE(HttpStatus.BAD_REQUEST, "IMPORT_400_1", "CSV 파일이 비어 있거나 형식이 올바르지 않습니다."),
     CSV_IMPORT_FAILED(HttpStatus.BAD_REQUEST, "IMPORT_400_2", "CSV 가져오기에 실패했습니다."),
+    CSV_IMPORT_INVALID_FILE_TYPE(HttpStatus.BAD_REQUEST, "IMPORT_400_3", "허용되지 않은 CSV 파일 형식입니다."),
+    CSV_IMPORT_FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "IMPORT_413_1", "업로드 가능한 CSV 파일 크기를 초과했습니다."),
 
     DAILY_METRIC_NOT_FOUND(HttpStatus.NOT_FOUND, "METRIC_404_1", "일별 지표를 찾을 수 없습니다."),
     INSIGHT_NOT_FOUND(HttpStatus.NOT_FOUND, "INSIGHT_404_1", "인사이트를 찾을 수 없습니다."),
