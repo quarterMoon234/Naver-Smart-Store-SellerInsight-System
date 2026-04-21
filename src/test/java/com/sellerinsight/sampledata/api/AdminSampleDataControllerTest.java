@@ -126,7 +126,8 @@ class AdminSampleDataControllerTest {
                 .andExpect(jsonPath("$.data.processedSellerCount").value(2))
                 .andExpect(jsonPath("$.data.failedSellerCount").value(0))
                 .andExpect(jsonPath("$.data.generatedInsightCount").value(3))
-                .andExpect(jsonPath("$.data.status").value("SUCCESS"));
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.durationMs").isNumber());
 
         Seller alphaSeller = sellerRepository.findAll().stream()
                 .filter(seller -> "sample-seller-alpha".equals(seller.getExternalSellerId()))
@@ -164,7 +165,8 @@ class AdminSampleDataControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].metricDate").value(targetMetricDate.toString()))
-                .andExpect(jsonPath("$.data[0].status").value("SUCCESS"));
+                .andExpect(jsonPath("$.data[0].status").value("SUCCESS"))
+                .andExpect(jsonPath("$.data[0].durationMs").isNumber());
 
         Long runId = pipelineRunRepository.findAllByPipelineTypeOrderByIdDesc(
                 com.sellerinsight.pipeline.domain.PipelineType.DAILY
@@ -175,7 +177,28 @@ class AdminSampleDataControllerTest {
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.run.durationMs").isNumber())
                 .andExpect(jsonPath("$.data.itemCount").value(2))
-                .andExpect(jsonPath("$.data.items.length()").value(2));
+                .andExpect(jsonPath("$.data.items.length()").value(2))
+                .andExpect(jsonPath("$.data.items[0].durationMs").isNumber());
+    }
+
+    @Test
+    void bootstrapLargeSampleData() throws Exception {
+        LocalDate targetMetricDate = LocalDate.now(ASIA_SEOUL).minusDays(1);
+
+        mockMvc.perform(
+                        post("/api/v1/admin/sample-data/bootstrap")
+                                .param("scenario", "large")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.scenario").value("large"))
+                .andExpect(jsonPath("$.data.targetMetricDate").value(targetMetricDate.toString()))
+                .andExpect(jsonPath("$.data.sellerCount").value(30))
+                .andExpect(jsonPath("$.data.productCount").value(600))
+                .andExpect(jsonPath("$.data.orderCount").value(4800))
+                .andExpect(jsonPath("$.data.orderItemCount").value(4800))
+                .andExpect(jsonPath("$.data.sellers.length()").value(30));
     }
 }

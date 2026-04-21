@@ -19,7 +19,8 @@ public record PipelineRunSummaryResponse(
         int failedSellerCount,
         int generatedInsightCount,
         OffsetDateTime startedAt,
-        OffsetDateTime endedAt
+        OffsetDateTime endedAt,
+        Long durationMs
 ) {
     public static PipelineRunSummaryResponse from(PipelineRun pipelineRun) {
         return new PipelineRunSummaryResponse(
@@ -33,7 +34,8 @@ public record PipelineRunSummaryResponse(
                 pipelineRun.getFailedSellerCount(),
                 pipelineRun.getGeneratedInsightCount(),
                 pipelineRun.getStartedAt(),
-                pipelineRun.getEndedAt()
+                pipelineRun.getEndedAt(),
+                pipelineRun.getDurationMs()
         );
     }
 }

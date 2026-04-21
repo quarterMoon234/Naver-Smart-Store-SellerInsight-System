@@ -7,6 +7,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
@@ -55,17 +56,17 @@ public class PipelineRunItem extends BaseEntity {
             Seller seller,
             PipelineRunItemStatus status,
             int generatedInsightCount,
-            String errorMessage
+            String errorMessage,
+            OffsetDateTime startedAt,
+            OffsetDateTime endedAt
     ) {
-        OffsetDateTime now = OffsetDateTime.now(ASIA_SEOUL);
-
         this.pipelineRun = pipelineRun;
         this.seller = seller;
         this.status = status;
         this.generatedInsightCount = generatedInsightCount;
         this.errorMessage = truncate(errorMessage);
-        this.startedAt = now;
-        this.endedAt = now;
+        this.startedAt = startedAt;
+        this.endedAt = endedAt;
     }
 
     public static PipelineRunItem success(
@@ -73,12 +74,32 @@ public class PipelineRunItem extends BaseEntity {
             Seller seller,
             int generatedInsightCount
     ) {
+        OffsetDateTime now = OffsetDateTime.now(ASIA_SEOUL);
+
+        return success(
+                pipelineRun,
+                seller,
+                generatedInsightCount,
+                now,
+                now
+        );
+    }
+
+    public static PipelineRunItem success(
+            PipelineRun pipelineRun,
+            Seller seller,
+            int generatedInsightCount,
+            OffsetDateTime startedAt,
+            OffsetDateTime endedAt
+    ) {
         return new PipelineRunItem(
                 pipelineRun,
                 seller,
                 PipelineRunItemStatus.SUCCESS,
                 generatedInsightCount,
-                null
+                null,
+                startedAt,
+                endedAt
         );
     }
 
@@ -87,13 +108,41 @@ public class PipelineRunItem extends BaseEntity {
             Seller seller,
             String errorMessage
     ) {
+        OffsetDateTime now = OffsetDateTime.now(ASIA_SEOUL);
+
+        return failed(
+                pipelineRun,
+                seller,
+                errorMessage,
+                now,
+                now
+        );
+    }
+
+    public static PipelineRunItem failed(
+            PipelineRun pipelineRun,
+            Seller seller,
+            String errorMessage,
+            OffsetDateTime startedAt,
+            OffsetDateTime endedAt
+    ) {
         return new PipelineRunItem(
                 pipelineRun,
                 seller,
                 PipelineRunItemStatus.FAILED,
                 0,
-                errorMessage
+                errorMessage,
+                startedAt,
+                endedAt
         );
+    }
+
+    public Long getDurationMs() {
+        if (startedAt == null || endedAt == null) {
+            return null;
+        }
+
+        return Duration.between(startedAt, endedAt).toMillis();
     }
 
     private static String truncate(String message) {

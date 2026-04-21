@@ -101,6 +101,8 @@ public class DailyPipelineExecutionService {
             List<Long> failedSellerIds = new ArrayList<>();
 
             for (Seller seller : sellers) {
+                OffsetDateTime itemStartedAt = OffsetDateTime.now(ASIA_SEOUL);
+
                 try {
                     dailyMetricAggregationService.aggregate(seller.getId(), metricDate);
                     InsightsByDateResponse insightResult = insightGenerationService.generate(
@@ -111,22 +113,30 @@ public class DailyPipelineExecutionService {
                     processedSellerCount++;
                     generatedInsightCount += insightResult.insightCount();
 
+                    OffsetDateTime itemEndedAt = OffsetDateTime.now(ASIA_SEOUL);
+
                     pipelineRunItemRepository.save(
                             PipelineRunItem.success(
                                     pipelineRun,
                                     seller,
-                                    insightResult.insightCount()
+                                    insightResult.insightCount(),
+                                    itemStartedAt,
+                                    itemEndedAt
                             )
                     );
                 } catch (Exception exception) {
                     failedSellerCount++;
                     failedSellerIds.add(seller.getId());
 
+                    OffsetDateTime itemEndedAt = OffsetDateTime.now(ASIA_SEOUL);
+
                     pipelineRunItemRepository.save(
                             PipelineRunItem.failed(
                                     pipelineRun,
                                     seller,
-                                    resolveErrorMessage(exception)
+                                    resolveErrorMessage(exception),
+                                    itemStartedAt,
+                                    itemEndedAt
                             )
                     );
 

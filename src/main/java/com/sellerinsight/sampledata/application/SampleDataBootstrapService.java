@@ -12,6 +12,7 @@ import com.sellerinsight.order.domain.OrderItem;
 import com.sellerinsight.order.domain.OrderItemRepository;
 import com.sellerinsight.pipeline.domain.PipelineRunItemRepository;
 import com.sellerinsight.pipeline.domain.PipelineRunRepository;
+import com.sellerinsight.pipeline.domain.PipelineExecutionLockRepository;
 import com.sellerinsight.product.domain.Product;
 import com.sellerinsight.product.domain.ProductRepository;
 import com.sellerinsight.sampledata.api.dto.SampleDataBootstrapResponse;
@@ -27,6 +28,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -36,9 +38,15 @@ public class SampleDataBootstrapService {
 
     private static final ZoneId ASIA_SEOUL = ZoneId.of("Asia/Seoul");
     private static final String DEFAULT_SCENARIO = "default";
+    private static final String LARGE_SCENARIO = "large";
+    private static final int LARGE_SELLER_COUNT = 30;
+    private static final int LARGE_PRODUCT_COUNT_PER_SELLER = 20;
+    private static final int LARGE_PREVIOUS_ORDER_COUNT_PER_SELLER = 100;
+    private static final int LARGE_TARGET_ORDER_COUNT_PER_SELLER = 60;
 
     private final PipelineRunItemRepository pipelineRunItemRepository;
     private final PipelineRunRepository pipelineRunRepository;
+    private final PipelineExecutionLockRepository pipelineExecutionLockRepository;
     private final RecommendationRepository recommendationRepository;
     private final InsightRepository insightRepository;
     private final DailyMetricRepository dailyMetricRepository;
@@ -52,7 +60,7 @@ public class SampleDataBootstrapService {
     public SampleDataBootstrapResponse bootstrap(String scenario) {
         String normalizedScenario = scenario == null ? DEFAULT_SCENARIO : scenario.trim().toLowerCase();
 
-        if (!DEFAULT_SCENARIO.equals(normalizedScenario)) {
+        if (!DEFAULT_SCENARIO.equals(normalizedScenario) && !LARGE_SCENARIO.equals(normalizedScenario)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
@@ -62,6 +70,14 @@ public class SampleDataBootstrapService {
         LocalDate previousMetricDate = targetMetricDate.minusDays(1);
         LocalDate recentMetricDate = targetMetricDate.minusDays(10);
         LocalDate staleMetricDate = targetMetricDate.minusDays(20);
+
+        if (LARGE_SCENARIO.equals(normalizedScenario)) {
+            return seedLargeScenario(
+                    normalizedScenario,
+                    previousMetricDate,
+                    targetMetricDate
+            );
+        }
 
         SellerSeedResult alpha = seedAlphaSeller(
                 previousMetricDate,
@@ -105,17 +121,18 @@ public class SampleDataBootstrapService {
     }
 
     private void clearExistingData() {
-        pipelineRunItemRepository.deleteAll();
-        pipelineRunRepository.deleteAll();
-        recommendationRepository.deleteAll();
-        insightRepository.deleteAll();
-        dailyMetricRepository.deleteAll();
-        orderItemRepository.deleteAll();
-        customerOrderRepository.deleteAll();
-        productRepository.deleteAll();
-        importJobRepository.deleteAll();
-        sellerCredentialRepository.deleteAll();
-        sellerRepository.deleteAll();
+        pipelineExecutionLockRepository.deleteAllInBatch();
+        pipelineRunItemRepository.deleteAllInBatch();
+        pipelineRunRepository.deleteAllInBatch();
+        recommendationRepository.deleteAllInBatch();
+        insightRepository.deleteAllInBatch();
+        dailyMetricRepository.deleteAllInBatch();
+        orderItemRepository.deleteAllInBatch();
+        customerOrderRepository.deleteAllInBatch();
+        productRepository.deleteAllInBatch();
+        importJobRepository.deleteAllInBatch();
+        sellerCredentialRepository.deleteAllInBatch();
+        sellerRepository.deleteAllInBatch();
     }
 
     private SellerSeedResult seedAlphaSeller(
@@ -332,6 +349,126 @@ public class SampleDataBootstrapService {
         return new SellerSeedResult(seller, 2, orderCount, orderItemCount);
     }
 
+    private SampleDataBootstrapResponse seedLargeScenario(
+            String normalizedScenario,
+            LocalDate previousMetricDate,
+            LocalDate targetMetricDate
+    ) {
+        List<SampleDataSellerResponse> sellers = new ArrayList<>();
+
+        int totalProductCount = 0;
+        int totalOrderCount = 0;
+        int totalOrderItemCount = 0;
+
+        for (int sellerIndex = 1; sellerIndex <= LARGE_SELLER_COUNT; sellerIndex++) {
+            SellerSeedResult result = seedLargeSeller(
+                    sellerIndex,
+                    previousMetricDate,
+                    targetMetricDate
+            );
+
+            sellers.add(new SampleDataSellerResponse(
+                    result.seller().getId(),
+                    result.seller().getExternalSellerId(),
+                    result.seller().getSellerName(),
+                    result.productCount(),
+                    result.orderCount()
+            ));
+
+            totalProductCount += result.productCount();
+            totalOrderCount += result.orderCount();
+            totalOrderItemCount += result.orderItemCount();
+        }
+
+        return new SampleDataBootstrapResponse(
+                normalizedScenario,
+                previousMetricDate,
+                targetMetricDate,
+                sellers.size(),
+                totalProductCount,
+                totalOrderCount,
+                totalOrderItemCount,
+                sellers
+        );
+    }
+
+    private SellerSeedResult seedLargeSeller(
+            int sellerIndex,
+            LocalDate previousMetricDate,
+            LocalDate targetMetricDate
+    ) {
+        String sellerSequence = "%03d".formatted(sellerIndex);
+        Seller seller = sellerRepository.saveAndFlush(
+                Seller.create(
+                        "large-seller-" + sellerSequence,
+                        "large-store-" + sellerSequence
+                )
+        );
+
+        List<Product> products = new ArrayList<>();
+
+        for (int productIndex = 1; productIndex <= LARGE_PRODUCT_COUNT_PER_SELLER; productIndex++) {
+            String productSequence = "%03d".formatted(productIndex);
+            boolean soldOut = productIndex <= 3;
+
+            products.add(Product.create(
+                    seller,
+                    seller.getExternalSellerId() + "-PROD-" + productSequence,
+                    "Large 상품 " + sellerSequence + "-" + productSequence,
+                    new BigDecimal("20000"),
+                    soldOut ? 0 : 100 + productIndex,
+                    soldOut ? "SOLD_OUT" : "ON_SALE",
+                    importedAt(previousMetricDate)
+            ));
+        }
+
+        List<Product> savedProducts = productRepository.saveAll(products);
+
+        int orderCount = 0;
+        int orderItemCount = 0;
+
+        for (int sequence = 1; sequence <= LARGE_PREVIOUS_ORDER_COUNT_PER_SELLER; sequence++) {
+            Product product = savedProducts.get((sequence - 1) % 10);
+
+            createLargeSingleItemOrder(
+                    seller,
+                    product,
+                    previousMetricDate,
+                    "PREV",
+                    sequence,
+                    1,
+                    new BigDecimal("20000")
+            );
+
+            orderCount++;
+            orderItemCount++;
+        }
+
+        for (int sequence = 1; sequence <= LARGE_TARGET_ORDER_COUNT_PER_SELLER; sequence++) {
+            Product product = savedProducts.get(3 + ((sequence - 1) % 7));
+
+            createLargeSingleItemOrder(
+                    seller,
+                    product,
+                    targetMetricDate,
+                    "TARGET",
+                    sequence,
+                    1,
+                    new BigDecimal("10000")
+            );
+
+            orderCount++;
+            orderItemCount++;
+        }
+
+        return new SellerSeedResult(
+                seller,
+                LARGE_PRODUCT_COUNT_PER_SELLER,
+                orderCount,
+                orderItemCount
+        );
+    }
+
     private void createSingleItemOrder(
             Seller seller,
             Product product,
@@ -361,6 +498,42 @@ public class SampleDataBootstrapService {
                         customerOrder,
                         product,
                         seller.getExternalSellerId() + "-ITEM-" + sequence + "-" + orderDate,
+                        quantity,
+                        unitPrice,
+                        itemAmount
+                )
+        );
+    }
+
+    private void createLargeSingleItemOrder(
+            Seller seller,
+            Product product,
+            LocalDate orderDate,
+            String orderGroup,
+            int sequence,
+            int quantity,
+            BigDecimal unitPrice
+    ) {
+        BigDecimal itemAmount = unitPrice.multiply(BigDecimal.valueOf(quantity));
+        OffsetDateTime orderedAt = orderDate.atTime(sequence % 24, sequence % 60)
+                .atZone(ASIA_SEOUL)
+                .toOffsetDateTime();
+
+        CustomerOrder customerOrder = customerOrderRepository.save(
+                CustomerOrder.create(
+                        seller,
+                        seller.getExternalSellerId() + "-ORD-" + orderGroup + "-" + sequence,
+                        orderedAt,
+                        "PAID",
+                        itemAmount
+                )
+        );
+
+        orderItemRepository.save(
+                OrderItem.create(
+                        customerOrder,
+                        product,
+                        seller.getExternalSellerId() + "-ITEM-" + orderGroup + "-" + sequence,
                         quantity,
                         unitPrice,
                         itemAmount

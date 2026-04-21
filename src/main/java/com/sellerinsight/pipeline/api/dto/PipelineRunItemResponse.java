@@ -12,7 +12,8 @@ public record PipelineRunItemResponse(
         int generatedInsightCount,
         String errorMessage,
         OffsetDateTime startedAt,
-        OffsetDateTime endedAt
+        OffsetDateTime endedAt,
+        Long durationMs
 ) {
     public static PipelineRunItemResponse from(PipelineRunItem pipelineRunItem) {
         return new PipelineRunItemResponse(
@@ -22,7 +23,8 @@ public record PipelineRunItemResponse(
                 pipelineRunItem.getGeneratedInsightCount(),
                 pipelineRunItem.getErrorMessage(),
                 pipelineRunItem.getStartedAt(),
-                pipelineRunItem.getEndedAt()
+                pipelineRunItem.getEndedAt(),
+                pipelineRunItem.getDurationMs()
         );
     }
 }
