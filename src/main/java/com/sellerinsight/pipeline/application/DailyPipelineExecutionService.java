@@ -37,6 +37,7 @@ public class DailyPipelineExecutionService {
     private final PipelineRunRepository pipelineRunRepository;
     private final PipelineRunItemRepository pipelineRunItemRepository;
     private final PipelineExecutionLockRepository pipelineExecutionLockRepository;
+    private final PipelineMetricsRecorder pipelineMetricsRecorder;
 
     @Value("${app.pipeline.daily.lock-timeout-minutes:30}")
     private long lockTimeoutMinutes;
@@ -158,6 +159,8 @@ public class DailyPipelineExecutionService {
             );
 
             PipelineRun savedPipelineRun = pipelineRunRepository.saveAndFlush(pipelineRun);
+
+            pipelineMetricsRecorder.recordDailyPipelineRun(savedPipelineRun);
 
             return DailyPipelineRunResponse.from(savedPipelineRun, failedSellerIds);
 
