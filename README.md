@@ -233,7 +233,7 @@ POST /api/v1/sellers/{sellerId}/insights/generate?date={metricDate}
 | 구분 | Method | Path |
 | --- | --- | --- |
 | Health | `GET` | `/api/v1/health` |
-| Seller | `POST` | `/api/v1/sellers` |
+| Seller | `GET` | `/api/v1/sellers/me` |
 | Seller | `GET` | `/api/v1/sellers/{sellerId}` |
 | CSV Import | `POST` | `/api/v1/sellers/{sellerId}/import-jobs/orders/csv` |
 | CSV Import | `GET` | `/api/v1/sellers/{sellerId}/import-jobs/{importJobId}` |
