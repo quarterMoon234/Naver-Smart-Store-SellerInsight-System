@@ -1,6 +1,5 @@
 package com.sellerinsight.seller.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sellerinsight.importjob.domain.ImportJobRepository;
 import com.sellerinsight.insight.domain.InsightRepository;
 import com.sellerinsight.insight.domain.RecommendationRepository;
@@ -10,7 +9,6 @@ import com.sellerinsight.order.domain.OrderItemRepository;
 import com.sellerinsight.pipeline.domain.PipelineRunItemRepository;
 import com.sellerinsight.pipeline.domain.PipelineRunRepository;
 import com.sellerinsight.product.domain.ProductRepository;
-import com.sellerinsight.seller.api.dto.CreateSellerRequest;
 import com.sellerinsight.seller.domain.Seller;
 import com.sellerinsight.seller.domain.SellerCredentialRepository;
 import com.sellerinsight.seller.domain.SellerRepository;
@@ -19,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -35,9 +32,6 @@ class SellerControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Autowired
     private SellerRepository sellerRepository;
@@ -88,23 +82,6 @@ class SellerControllerTest {
     }
 
     @Test
-    void createSeller() throws Exception {
-        CreateSellerRequest request = new CreateSellerRequest(
-                "naver-seller-001",
-                "sellerinsight-store"
-        );
-
-        mockMvc.perform(post("/api/v1/sellers")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.externalSellerId").value("naver-seller-001"))
-                .andExpect(jsonPath("$.data.sellerName").value("sellerinsight-store"))
-                .andExpect(jsonPath("$.data.status").value("CONNECTED"));
-    }
-
-    @Test
     void getSeller() throws Exception {
         Seller seller = sellerRepository.saveAndFlush(
                 Seller.create("naver-seller-001", "sellerinsight-store")
@@ -130,5 +107,13 @@ class SellerControllerTest {
                 .andExpect(jsonPath("$.data.id").value(seller.getId()))
                 .andExpect(jsonPath("$.data.externalSellerId").value("seller-demo"))
                 .andExpect(jsonPath("$.data.sellerName").value("seller-demo-store"));
+    }
+
+    @Test
+    void createSellerEndpointIsRemoved() throws Exception {
+        mockMvc.perform(post("/api/v1/sellers"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("COMMON_404"));
     }
 }
