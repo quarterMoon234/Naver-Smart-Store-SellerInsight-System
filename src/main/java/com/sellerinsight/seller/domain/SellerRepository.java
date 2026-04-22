@@ -7,8 +7,6 @@ import java.util.Optional;
 
 public interface SellerRepository extends JpaRepository<Seller, Long> {
 
-    boolean existsByExternalSellerId(String externalSellerId);
-
     Optional<Seller> findByExternalSellerId(String externalSellerId);
 
     List<Seller> findAllByStatus(SellerStatus status);
