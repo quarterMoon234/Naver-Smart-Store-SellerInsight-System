@@ -130,7 +130,7 @@ class AdminSampleDataControllerTest {
                 .andExpect(jsonPath("$.data.durationMs").isNumber());
 
         Seller alphaSeller = sellerRepository.findAll().stream()
-                .filter(seller -> "sample-seller-alpha".equals(seller.getExternalSellerId()))
+                .filter(seller -> "seller-demo".equals(seller.getExternalSellerId()))
                 .findFirst()
                 .orElseThrow();
 

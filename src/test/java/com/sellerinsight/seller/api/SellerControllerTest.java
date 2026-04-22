@@ -117,4 +117,18 @@ class SellerControllerTest {
                 .andExpect(jsonPath("$.data.externalSellerId").value("naver-seller-001"))
                 .andExpect(jsonPath("$.data.status").value("CONNECTED"));
     }
+
+    @Test
+    void getCurrentSeller() throws Exception {
+        Seller seller = sellerRepository.saveAndFlush(
+                Seller.create("seller-demo", "seller-demo-store")
+        );
+
+        mockMvc.perform(get("/api/v1/sellers/me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(seller.getId()))
+                .andExpect(jsonPath("$.data.externalSellerId").value("seller-demo"))
+                .andExpect(jsonPath("$.data.sellerName").value("seller-demo-store"));
+    }
 }
