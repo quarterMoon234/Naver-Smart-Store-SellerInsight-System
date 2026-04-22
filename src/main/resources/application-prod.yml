@@ -22,6 +22,7 @@ app:
     admin-password: ${APP_ADMIN_PASSWORD}
     seller-username: ${APP_SELLER_USERNAME}
     seller-password: ${APP_SELLER_PASSWORD}
+    seller-external-seller-id: ${APP_SELLER_EXTERNAL_SELLER_ID}
 
 server:
   forward-headers-strategy: framework

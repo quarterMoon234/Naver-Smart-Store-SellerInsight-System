@@ -1,5 +1,6 @@
 package com.sellerinsight.sampledata.application;
 
+import com.sellerinsight.common.config.ApiSecurityProperties;
 import com.sellerinsight.common.error.BusinessException;
 import com.sellerinsight.common.error.ErrorCode;
 import com.sellerinsight.importjob.domain.ImportJobRepository;
@@ -56,6 +57,7 @@ public class SampleDataBootstrapService {
     private final ImportJobRepository importJobRepository;
     private final SellerCredentialRepository sellerCredentialRepository;
     private final SellerRepository sellerRepository;
+    private final ApiSecurityProperties apiSecurityProperties;
 
     public SampleDataBootstrapResponse bootstrap(String scenario) {
         String normalizedScenario = scenario == null ? DEFAULT_SCENARIO : scenario.trim().toLowerCase();
@@ -142,7 +144,7 @@ public class SampleDataBootstrapService {
             LocalDate staleMetricDate
     ) {
         Seller seller = sellerRepository.saveAndFlush(
-                Seller.create("sample-seller-alpha", "sample-store-alpha")
+                Seller.create(apiSecurityProperties.sellerExternalSellerId(), "seller-demo-store")
         );
 
         Product mainProduct = productRepository.saveAndFlush(
@@ -398,10 +400,17 @@ public class SampleDataBootstrapService {
             LocalDate targetMetricDate
     ) {
         String sellerSequence = "%03d".formatted(sellerIndex);
+        String externalSellerId = sellerIndex == 1
+                ? apiSecurityProperties.sellerExternalSellerId()
+                : "large-seller-" + sellerSequence;
+        String sellerName = sellerIndex == 1
+                ? "seller-demo-store"
+                : "large-store-" + sellerSequence;
+
         Seller seller = sellerRepository.saveAndFlush(
                 Seller.create(
-                        "large-seller-" + sellerSequence,
-                        "large-store-" + sellerSequence
+                        externalSellerId,
+                        sellerName
                 )
         );
 

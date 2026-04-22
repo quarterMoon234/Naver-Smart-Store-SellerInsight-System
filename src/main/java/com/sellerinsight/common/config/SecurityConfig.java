@@ -40,6 +40,7 @@ public class SecurityConfig {
                                 "/actuator/info",
                                 "/actuator/prometheus"
                         ).permitAll()
+                        .requestMatchers("/api/v1/sellers/me").hasRole("SELLER")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/**").hasAnyRole("SELLER", "ADMIN")
                         .anyRequest().authenticated()

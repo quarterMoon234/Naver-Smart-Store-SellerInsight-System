@@ -10,6 +10,7 @@ public record ApiSecurityProperties(
         @NotBlank String adminUsername,
         @NotBlank String adminPassword,
         @NotBlank String sellerUsername,
-        @NotBlank String sellerPassword
+        @NotBlank String sellerPassword,
+        @NotBlank String sellerExternalSellerId
 ) {
 }
