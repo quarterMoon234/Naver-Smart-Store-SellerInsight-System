@@ -27,7 +27,7 @@ public class StaleProductRiskRule implements InsightRule {
         return Optional.of(new InsightCandidate(
                 InsightType.STALE_PRODUCT_RISK,
                 severity,
-                "장기 미판매 상품이 증가하고 있습니다.",
+                "장기 미판매 상품이 확인되었습니다.",
                 "최근 판매 이력이 없는 상품이 " + staleProductCount + "개 확인되었습니다.",
                 Map.of(
                         "staleProductCount", staleProductCount

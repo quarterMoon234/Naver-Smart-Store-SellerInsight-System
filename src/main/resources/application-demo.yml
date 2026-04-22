@@ -12,6 +12,7 @@ app:
     admin-password: ${APP_ADMIN_PASSWORD:admin-1234}
     seller-username: ${APP_SELLER_USERNAME:seller-demo}
     seller-password: ${APP_SELLER_PASSWORD:seller-demo-1234}
+    seller-external-seller-id: ${APP_SELLER_EXTERNAL_SELLER_ID:seller-demo}
 
   pipeline:
     daily:
