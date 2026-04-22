@@ -1,8 +1,8 @@
 # SellerInsight
 
-SellerInsight는 판매자의 주문 데이터를 정규화하고, 일별 판매 지표와 운영 인사이트를 제공하는 커머스 분석 백엔드 서비스입니다.
+SellerInsight는 판매자 주문 데이터를 정규화하고, 일별 판매 지표와 운영 인사이트를 제공하는 커머스 분석 백엔드 서비스입니다.
 
-판매자는 주문 데이터를 CSV로 업로드하거나 연동 데이터를 적재할 수 있으며, 서비스는 이를 내부 도메인 모델로 정리한 뒤 매출, 주문 수, 품절 위험, 장기 미판매 상품, 주문 감소와 같은 지표를 분석합니다. 관리자는 일별 파이프라인을 실행하고, 실행 이력과 운영 지표를 Grafana에서 확인할 수 있습니다.
+판매자는 주문 데이터를 CSV로 업로드하거나 샘플 데이터를 생성해 분석 흐름을 검증할 수 있습니다. 서비스는 입력 데이터를 판매자, 상품, 주문, 주문 아이템 도메인으로 정규화한 뒤 매출, 주문 수, 품절 위험, 장기 미판매 상품, 주문 감소와 같은 지표를 분석합니다. 관리자는 전체 판매자 대상 일별 파이프라인을 실행하고, 실행 이력과 운영 지표를 Grafana에서 확인할 수 있습니다.
 
 ## 주요 기능
 
@@ -17,38 +17,32 @@ SellerInsight는 판매자의 주문 데이터를 정규화하고, 일별 판매
 - stale lock 복구 및 운영자 강제 lock 해제
 - Prometheus/Grafana 기반 파이프라인 운영 지표 모니터링
 
+## 시스템 구성
+
+<img src="assets/readme/architecture.png" alt="SellerInsight 시스템 아키텍처" width="850">
+
+SellerInsight는 Spring Boot API 서버와 PostgreSQL을 중심으로 동작합니다. 애플리케이션은 주문 데이터를 정규화하고 일별 지표와 인사이트를 생성하며, 실행 결과는 Micrometer metric으로 발행됩니다. Prometheus는 애플리케이션 metric을 수집하고 Grafana는 파이프라인 실행 상태를 대시보드와 알림 규칙으로 제공합니다.
+
 ## 서비스 흐름
 
-```text
-주문 데이터 입력
-  -> 판매자/상품/주문/주문 아이템 정규화
-  -> 일별 지표 집계
-  -> 규칙 기반 인사이트 생성
-  -> 추천 액션 생성
-  -> 판매자 대시보드 제공
-```
+### 데이터 처리 파이프라인
 
-일별 파이프라인은 아래 흐름으로 실행됩니다.
+<img src="assets/readme/data-pipeline.png" alt="SellerInsight 데이터 처리 파이프라인" width="850">
 
-```text
-관리자 실행 또는 스케줄러 실행
-  -> 파이프라인 실행 lock 획득
-  -> 전체 판매자 조회
-  -> 판매자별 일별 지표 집계
-  -> 판매자별 인사이트/추천 생성
-  -> 실행 이력 저장
-  -> 운영 metric 발행
-  -> Prometheus 수집
-  -> Grafana 대시보드/알림 확인
-```
+CSV 업로드 또는 샘플 데이터 생성으로 유입된 주문 데이터는 입력 검증을 거친 뒤 내부 도메인 모델로 정규화됩니다. 이후 일별 지표를 집계하고 규칙 기반 인사이트와 추천 액션을 생성해 판매자 대시보드에서 확인할 수 있습니다.
+
+### 일별 운영 파이프라인
+
+<img src="assets/readme/daily-pipeline.png" alt="SellerInsight 일별 운영 파이프라인" width="850">
+
+관리자 실행 또는 스케줄러 실행으로 전체 판매자 대상 일별 파이프라인을 수행합니다. 파이프라인은 lock을 선점해 동일 날짜 중복 실행을 차단하고, 판매자별 집계/인사이트 생성을 완료한 뒤 실행 이력과 운영 지표를 남깁니다.
 
 ## 기술 스택
 
 - Java 17
 - Spring Boot 3.5
 - Spring Web, Validation, Security, Data JPA, Actuator
-- PostgreSQL
-- H2 Test DB
+- PostgreSQL, H2 Test DB
 - Flyway
 - Swagger/OpenAPI
 - Micrometer, Prometheus, Grafana, Loki, Alloy
@@ -279,6 +273,8 @@ Grafana dashboard:
 ```text
 SellerInsight Daily Pipeline
 ```
+
+<img src="assets/readme/grafana-dashboard.png" alt="SellerInsight Grafana 대시보드" width="850">
 
 Alert rule:
 
